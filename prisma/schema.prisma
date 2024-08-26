@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id        String     @id @default(uuid()) @db.Uuid
+  password String     @db.VarChar(100)
+  name      String     @db.VarChar(100)
+  email     String     @unique
+  userName  String     @db.VarChar(100)  @map("user_name")
+  enable    Boolean    @default(true)
+  token     String?
+
+  tweets    Tweets[]
+  likes     Likes[]
+  replys    Replys[]
+  followers Follower[] @relation("follower")
+  following Follower[] @relation("userId")
+
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Tweets {
+  id          String    @id @default(uuid()) @db.Uuid
+  description String    @db.VarChar(200)
+  type        TweetType @default(tweet)
+  userId      String    @db.Uuid @map("user_id")
+  user        Users     @relation(fields: [userId], references: [id])
+  likes       Likes[]
+  replys      Replys[]
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("tweets")
+}
+
+enum TweetType {
+  tweet
+  reply
+}
+
+model Likes {
+  id        String  @id @default(uuid()) @db.Uuid
+  userId    String  @db.Uuid @map("user_id")
+  tweetId   String  @db.Uuid @map("tweet_id")
+  user      Users   @relation(fields: [userId], references: [id])
+  tweet     Tweets  @relation(fields: [tweetId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("likes")
+}
+
+model Replys {
+  id        String  @id @default(uuid()) @db.Uuid
+  userId    String  @db.Uuid @map("user_id")
+  tweetId   String  @db.Uuid @map("tweet_id")
+  user      Users   @relation(fields: [userId], references: [id])
+  tweet     Tweets  @relation(fields: [tweetId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("replys")
+}
+
+model Follower {
+  id          String  @id @default(uuid()) @db.Uuid
+  userId      String  @db.Uuid @map("user_id")
+  followerId  String  @db.Uuid @map("follower_id")
+  user        Users   @relation("userId", fields: [userId], references: [id])
+  follower    Users   @relation("follower", fields: [followerId], references: [id])
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("follower")
+}
